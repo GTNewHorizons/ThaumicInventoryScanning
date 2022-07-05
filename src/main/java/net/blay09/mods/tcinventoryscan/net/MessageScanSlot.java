@@ -6,8 +6,7 @@ import io.netty.buffer.ByteBuf;
 public class MessageScanSlot implements IMessage {
     private int slotNumber;
 
-    public MessageScanSlot() {
-    }
+    public MessageScanSlot() {}
 
     public MessageScanSlot(int slotNumber) {
         this.slotNumber = slotNumber;

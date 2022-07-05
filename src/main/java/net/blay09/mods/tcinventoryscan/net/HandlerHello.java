@@ -13,5 +13,4 @@ public class HandlerHello implements IMessageHandler<MessageHello, IMessage> {
         TCInventoryScanning.proxy.receivedHello(ctx.side == Side.SERVER ? ctx.getServerHandler().playerEntity : null);
         return ctx.side == Side.CLIENT ? new MessageHello(NetworkHandler.PROTOCOL_VERSION) : null;
     }
-
 }

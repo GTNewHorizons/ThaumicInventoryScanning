@@ -18,15 +18,17 @@ public class HandlerScanSlot implements IMessageHandler<MessageScanSlot, IMessag
     public IMessage onMessage(MessageScanSlot message, MessageContext ctx) {
         EntityPlayer entityPlayer = ctx.getServerHandler().playerEntity;
         Container container = entityPlayer.openContainer;
-        if (container != null && message.getSlotNumber() >= 0 && message.getSlotNumber() < container.inventorySlots.size()) {
+        if (container != null
+                && message.getSlotNumber() >= 0
+                && message.getSlotNumber() < container.inventorySlots.size()) {
             Slot slot = (Slot) container.inventorySlots.get(message.getSlotNumber());
             if (slot.getStack() != null && slot.canTakeStack(entityPlayer) && !(slot instanceof SlotCrafting)) {
                 ItemStack itemStack = slot.getStack();
-                ScanResult scan = new ScanResult((byte) 1, Item.getIdFromItem(itemStack.getItem()), itemStack.getItemDamage(), null, "");
+                ScanResult scan = new ScanResult(
+                        (byte) 1, Item.getIdFromItem(itemStack.getItem()), itemStack.getItemDamage(), null, "");
                 ScanManager.completeScan(entityPlayer, scan, "@");
             }
         }
         return null;
     }
-
 }

@@ -16,15 +16,13 @@ public class CommonProxy {
         FMLCommonHandler.instance().bus().register(this);
     }
 
-    public void postInit(FMLPostInitializationEvent event) {
+    public void postInit(FMLPostInitializationEvent event) {}
 
-    }
-
-    public void receivedHello(EntityPlayer entityPlayer) {
-    }
+    public void receivedHello(EntityPlayer entityPlayer) {}
 
     @SubscribeEvent
     public void playerJoined(PlayerEvent.PlayerLoggedInEvent event) {
-        NetworkHandler.instance.sendTo(new MessageHello(NetworkHandler.PROTOCOL_VERSION), (EntityPlayerMP) event.player);
+        NetworkHandler.instance.sendTo(
+                new MessageHello(NetworkHandler.PROTOCOL_VERSION), (EntityPlayerMP) event.player);
     }
 }

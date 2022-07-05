@@ -1,16 +1,21 @@
-[
 {
-  "modid": "tcinventoryscan",
-  "name": "TC Inventory Scanning",
-  "description": "Allows hovering over items in inventories while holding a Thaumometer to scan them.",
-  "version": "${version}",
-  "mcversion": "${mcversion}",
-  "url": "",
-  "updateUrl": "",
-  "authorList": ["BlayTheNinth"],
-  "credits": "BlayTheNinth",
-  "logoFile": "",
-  "screenshots": [],
-  "dependencies": []
+	"modListVersion": 2,
+	"modList": [{
+		"modid": "${modId}",
+		"name": "${modName}",
+		"description": "Allows hovering over items in inventories while holding a Thaumometer to scan them.",
+		"version": "${modVersion}",
+		"mcversion": "${minecraftVersion}",
+		"url": "",
+		"updateUrl": "",
+		"authorList": ["BlayTheNinth"],
+		"credits": "",
+		"logoFile": "",
+		"screenshots": [],
+		"parent": "",
+		"requiredMods": ["Thaumcraft"],
+		"dependencies": ["Thaumcraft"],
+		"dependants": [],
+		"useDependencyInformation": true
+	}]
 }
-]
