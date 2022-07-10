@@ -15,5 +15,4 @@ public class NetworkHandler {
         instance.registerMessage(HandlerHello.class, MessageHello.class, 2, Side.SERVER);
         instance.registerMessage(HandlerHello.class, MessageHello.class, 3, Side.CLIENT);
     }
-
 }

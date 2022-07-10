@@ -6,12 +6,19 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import net.blay09.mods.tcinventoryscan.net.NetworkHandler;
 
-@Mod(modid = TCInventoryScanning.MOD_ID, name = "TC Inventory Scanning", acceptableRemoteVersions = "*", dependencies = "required-after:Thaumcraft")
+@Mod(
+        modid = TCInventoryScanning.MOD_ID,
+        name = "TC Inventory Scanning",
+        acceptableRemoteVersions = "*",
+        dependencies = "required-after:Thaumcraft",
+        version = "GRADLETOKEN_VERSION")
 public class TCInventoryScanning {
 
     public static final String MOD_ID = "tcinventoryscan";
 
-    @SidedProxy(clientSide =  "net.blay09.mods.tcinventoryscan.client.ClientProxy", serverSide = "net.blay09.mods.tcinventoryscan.CommonProxy")
+    @SidedProxy(
+            clientSide = "net.blay09.mods.tcinventoryscan.client.ClientProxy",
+            serverSide = "net.blay09.mods.tcinventoryscan.CommonProxy")
     public static CommonProxy proxy;
 
     @Mod.EventHandler
@@ -25,5 +32,4 @@ public class TCInventoryScanning {
     public void postInit(FMLPostInitializationEvent event) {
         proxy.postInit(event);
     }
-
 }
