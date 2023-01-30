@@ -1,11 +1,12 @@
 package net.blay09.mods.tcinventoryscan.net;
 
+import net.minecraft.entity.player.EntityPlayer;
+
+import thaumcraft.api.research.ScanResult;
+import thaumcraft.common.lib.research.ScanManager;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
-import net.minecraft.entity.player.EntityPlayer;
-import thaumcraft.api.research.ScanResult;
-import thaumcraft.common.lib.research.ScanManager;
 
 public class HandlerScanSelf implements IMessageHandler<MessageScanSelf, IMessage> {
 

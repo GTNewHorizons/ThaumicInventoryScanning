@@ -1,13 +1,5 @@
 package net.blay09.mods.tcinventoryscan.client;
 
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.event.FMLInitializationEvent;
-import cpw.mods.fml.common.event.FMLPostInitializationEvent;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
-import cpw.mods.fml.common.network.FMLNetworkEvent;
-import cpw.mods.fml.common.registry.GameRegistry;
 import net.blay09.mods.tcinventoryscan.CommonProxy;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSelf;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSlot;
@@ -27,9 +19,11 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
+
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.research.ScanResult;
@@ -37,6 +31,14 @@ import thaumcraft.client.lib.ClientTickEventsFML;
 import thaumcraft.client.lib.UtilsFX;
 import thaumcraft.common.Thaumcraft;
 import thaumcraft.common.lib.research.ScanManager;
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.network.FMLNetworkEvent;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 public class ClientProxy extends CommonProxy {
 
@@ -90,8 +92,9 @@ public class ClientProxy extends CommonProxy {
             if (helloTimeout > 0) {
                 helloTimeout--;
                 if (helloTimeout <= 0) {
-                    entityPlayer.addChatMessage(new ChatComponentText(
-                            "This server does not have Crafting Tweaks installed. It will be disabled."));
+                    entityPlayer.addChatMessage(
+                            new ChatComponentText(
+                                    "This server does not have Crafting Tweaks installed. It will be disabled."));
                     isEnabled = false;
                 }
             }
@@ -100,8 +103,7 @@ public class ClientProxy extends CommonProxy {
             }
             ItemStack mouseItem = entityPlayer.inventory.getItemStack();
             if (mouseItem != null && mouseItem.getItem() == thaumometer) {
-                if (mouseSlot != null
-                        && mouseSlot.getStack() != null
+                if (mouseSlot != null && mouseSlot.getStack() != null
                         && mouseSlot.canTakeStack(entityPlayer)
                         && mouseSlot != lastScannedSlot
                         && !(mouseSlot instanceof SlotCrafting)) {
@@ -109,7 +111,11 @@ public class ClientProxy extends CommonProxy {
                     ItemStack itemStack = mouseSlot.getStack();
                     if (currentScan == null) {
                         currentScan = new ScanResult(
-                                (byte) 1, Item.getIdFromItem(itemStack.getItem()), itemStack.getItemDamage(), null, "");
+                                (byte) 1,
+                                Item.getIdFromItem(itemStack.getItem()),
+                                itemStack.getItemDamage(),
+                                null,
+                                "");
                     }
                     if (ScanManager.isValidScanTarget(entityPlayer, currentScan, "@")) {
                         if (ticksHovered > SOUND_TICKS && ticksHovered % 2 == 0) {
@@ -183,8 +189,7 @@ public class ClientProxy extends CommonProxy {
         if (isEnabled && event.itemStack.getItem() == thaumometer) {
             event.toolTip.add("\u00a76" + I18n.format("tcinventoryscan:thaumometerTooltip"));
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-                String[] lines =
-                        I18n.format("tcinventoryscan:thaumometerTooltipMore").split("\\\\n");
+                String[] lines = I18n.format("tcinventoryscan:thaumometerTooltipMore").split("\\\\n");
                 for (String line : lines) {
                     event.toolTip.add("\u00a73" + line);
                 }
@@ -222,14 +227,20 @@ public class ClientProxy extends CommonProxy {
                 if (mouseSlot != null && mouseSlot.getStack() != null) {
                     if (currentScan != null) {
                         renderScanningProgress(
-                                event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
+                                event.gui,
+                                event.mouseX,
+                                event.mouseY,
+                                ticksHovered / (float) SCAN_TICKS);
                     }
                     event.gui.renderToolTip(mouseSlot.getStack(), event.mouseX, event.mouseY);
                     effectRenderer.renderAspectsInGui((GuiContainer) event.gui, entityPlayer);
                 } else if (isHoveringPlayer) {
                     if (currentScan != null) {
                         renderScanningProgress(
-                                event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
+                                event.gui,
+                                event.mouseX,
+                                event.mouseY,
+                                ticksHovered / (float) SCAN_TICKS);
                     }
                     if (ScanManager.hasBeenScanned(entityPlayer, new ScanResult((byte) 2, 0, 0, entityPlayer, ""))) {
                         renderPlayerAspects(event.gui, event.mouseX, event.mouseY);
@@ -266,8 +277,8 @@ public class ClientProxy extends CommonProxy {
                         UtilsFX.drawTexturedQuadFull(0, 0, UtilsFX.getGuiZLevel(gui));
                         GL11.glDisable(GL11.GL_BLEND);
                         GL11.glPopMatrix();
-                        if (Thaumcraft.proxy.playerKnowledge.hasDiscoveredAspect(
-                                entityPlayer.getCommandSenderName(), aspect)) {
+                        if (Thaumcraft.proxy.playerKnowledge
+                                .hasDiscoveredAspect(entityPlayer.getCommandSenderName(), aspect)) {
                             UtilsFX.drawTag(
                                     x + shiftX,
                                     y + shiftY,
@@ -310,8 +321,7 @@ public class ClientProxy extends CommonProxy {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         float oldZLevel = gui.zLevel;
         gui.zLevel = 300;
-        Minecraft.getMinecraft()
-                .fontRenderer
+        Minecraft.getMinecraft().fontRenderer
                 .drawStringWithShadow(sb.toString(), mouseX, mouseY - 30, Integer.MAX_VALUE);
         gui.zLevel = oldZLevel;
         GL11.glEnable(GL11.GL_LIGHTING);
@@ -321,8 +331,7 @@ public class ClientProxy extends CommonProxy {
     }
 
     public boolean isHoveringPlayer(GuiContainer gui, int mouseX, int mouseY) {
-        return gui instanceof GuiInventory
-                && mouseX >= gui.guiLeft + INVENTORY_PLAYER_X
+        return gui instanceof GuiInventory && mouseX >= gui.guiLeft + INVENTORY_PLAYER_X
                 && mouseX < gui.guiLeft + INVENTORY_PLAYER_X + INVENTORY_PLAYER_WIDTH
                 && mouseY >= gui.guiTop + INVENTORY_PLAYER_Y
                 && mouseY < gui.guiTop + INVENTORY_PLAYER_Y + INVENTORY_PLAYER_HEIGHT;

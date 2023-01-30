@@ -1,10 +1,11 @@
 package net.blay09.mods.tcinventoryscan;
 
+import net.blay09.mods.tcinventoryscan.net.NetworkHandler;
+
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
-import net.blay09.mods.tcinventoryscan.net.NetworkHandler;
 
 @Mod(
         modid = TCInventoryScanning.MOD_ID,
