@@ -24,13 +24,6 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
-import thaumcraft.api.aspects.Aspect;
-import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.research.ScanResult;
-import thaumcraft.client.lib.ClientTickEventsFML;
-import thaumcraft.client.lib.UtilsFX;
-import thaumcraft.common.Thaumcraft;
-import thaumcraft.common.lib.research.ScanManager;
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -39,6 +32,13 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
+import thaumcraft.api.aspects.Aspect;
+import thaumcraft.api.aspects.AspectList;
+import thaumcraft.api.research.ScanResult;
+import thaumcraft.client.lib.ClientTickEventsFML;
+import thaumcraft.client.lib.UtilsFX;
+import thaumcraft.common.Thaumcraft;
+import thaumcraft.common.lib.research.ScanManager;
 
 public class ClientProxy extends CommonProxy {
 
