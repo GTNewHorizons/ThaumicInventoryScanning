@@ -7,11 +7,11 @@ import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import thaumcraft.api.research.ScanResult;
-import thaumcraft.common.lib.research.ScanManager;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import thaumcraft.api.research.ScanResult;
+import thaumcraft.common.lib.research.ScanManager;
 
 public class HandlerScanSlot implements IMessageHandler<MessageScanSlot, IMessage> {
 
