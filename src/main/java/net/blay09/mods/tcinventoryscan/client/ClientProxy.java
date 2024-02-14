@@ -1,6 +1,7 @@
 package net.blay09.mods.tcinventoryscan.client;
 
 import net.blay09.mods.tcinventoryscan.CommonProxy;
+import net.blay09.mods.tcinventoryscan.TCInventoryScanning;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSelf;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSlot;
 import net.blay09.mods.tcinventoryscan.net.NetworkHandler;
@@ -30,7 +31,6 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
@@ -50,10 +50,8 @@ public class ClientProxy extends CommonProxy {
     private static final int INVENTORY_PLAYER_WIDTH = 52;
     private static final int INVENTORY_PLAYER_HEIGHT = 70;
 
-    private static final int HELLO_TIMEOUT = 20 * 60;
-
-    private int helloTimeout;
     private boolean isEnabled;
+    private boolean missingMessageSent;
     private Item thaumometer;
     private Slot mouseSlot;
     private Slot lastScannedSlot;
@@ -79,28 +77,21 @@ public class ClientProxy extends CommonProxy {
     }
 
     @SubscribeEvent
-    public void connectedToServer(FMLNetworkEvent.ClientConnectedToServerEvent event) {
-        helloTimeout = HELLO_TIMEOUT;
-        isEnabled = false;
-    }
-
-    @SubscribeEvent
     public void clientTick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer entityPlayer = mc.thePlayer;
         if (entityPlayer != null) {
-            if (helloTimeout > 0) {
-                helloTimeout--;
-                if (helloTimeout <= 0) {
+            if (!TCInventoryScanning.isServerSideInstalled) {
+                if (!missingMessageSent) {
                     entityPlayer.addChatMessage(
                             new ChatComponentText(
-                                    "This server does not have Crafting Tweaks installed. It will be disabled."));
+                                    "This server does not have Thaumcraft Inventory Scanning installed. It will be disabled."));
+                    missingMessageSent = true;
                     isEnabled = false;
                 }
-            }
-            if (!isEnabled) {
                 return;
             }
+
             ItemStack mouseItem = entityPlayer.inventory.getItemStack();
             if (mouseItem != null && mouseItem.getItem() == thaumometer) {
                 if (mouseSlot != null && mouseSlot.getStack() != null
@@ -335,12 +326,5 @@ public class ClientProxy extends CommonProxy {
                 && mouseX < gui.guiLeft + INVENTORY_PLAYER_X + INVENTORY_PLAYER_WIDTH
                 && mouseY >= gui.guiTop + INVENTORY_PLAYER_Y
                 && mouseY < gui.guiTop + INVENTORY_PLAYER_Y + INVENTORY_PLAYER_HEIGHT;
-    }
-
-    @Override
-    public void receivedHello(EntityPlayer entityPlayer) {
-        super.receivedHello(entityPlayer);
-        helloTimeout = 0;
-        isEnabled = true;
     }
 }
