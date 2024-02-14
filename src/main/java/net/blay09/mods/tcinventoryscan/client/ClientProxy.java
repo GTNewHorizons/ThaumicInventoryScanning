@@ -87,6 +87,7 @@ public class ClientProxy extends CommonProxy {
                             new ChatComponentText(
                                     "This server does not have Thaumcraft Inventory Scanning installed. It will be disabled."));
                     missingMessageSent = true;
+                    isEnabled = false;
                 }
                 return;
             }
