@@ -50,7 +50,6 @@ public class ClientProxy extends CommonProxy {
     private static final int INVENTORY_PLAYER_WIDTH = 52;
     private static final int INVENTORY_PLAYER_HEIGHT = 70;
 
-    private boolean isEnabled;
     private boolean missingMessageSent;
     private Item thaumometer;
     private Slot mouseSlot;
@@ -87,7 +86,6 @@ public class ClientProxy extends CommonProxy {
                             new ChatComponentText(
                                     "This server does not have Thaumcraft Inventory Scanning installed. It will be disabled."));
                     missingMessageSent = true;
-                    isEnabled = false;
                 }
                 return;
             }
@@ -177,7 +175,7 @@ public class ClientProxy extends CommonProxy {
 
     @SubscribeEvent
     public void onTooltip(ItemTooltipEvent event) {
-        if (isEnabled && event.itemStack.getItem() == thaumometer) {
+        if (TCInventoryScanning.isServerSideInstalled && event.itemStack.getItem() == thaumometer) {
             event.toolTip.add("\u00a76" + I18n.format("tcinventoryscan:thaumometerTooltip"));
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
                 String[] lines = I18n.format("tcinventoryscan:thaumometerTooltipMore").split("\\\\n");
@@ -190,7 +188,7 @@ public class ClientProxy extends CommonProxy {
 
     @SubscribeEvent
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post event) {
-        if (isEnabled && event.gui instanceof GuiContainer) {
+        if (TCInventoryScanning.isServerSideInstalled && event.gui instanceof GuiContainer) {
             Minecraft mc = Minecraft.getMinecraft();
             EntityPlayer entityPlayer = mc.thePlayer;
             boolean oldHoveringPlayer = isHoveringPlayer;
