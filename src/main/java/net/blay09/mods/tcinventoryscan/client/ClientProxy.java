@@ -1,8 +1,9 @@
 package net.blay09.mods.tcinventoryscan.client;
 
+import java.util.Map;
+
 import net.blay09.mods.tcinventoryscan.CommonProxy;
 import net.blay09.mods.tcinventoryscan.TCInventoryScanning;
-import net.blay09.mods.tcinventoryscan.net.MessageScanSelf;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSlot;
 import net.blay09.mods.tcinventoryscan.net.NetworkHandler;
 import net.minecraft.client.Minecraft;
@@ -17,6 +18,7 @@ import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.world.World;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -71,63 +73,44 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void postInit(FMLPostInitializationEvent event) {
         super.postInit(event);
-
         thaumometer = GameRegistry.findItem("Thaumcraft", "ItemThaumometer");
+    }
+
+    private boolean isScannableSlot(EntityPlayer entityPlayer) {
+        return mouseSlot != null && mouseSlot.getStack() != null
+                && mouseSlot.canTakeStack(entityPlayer)
+                && mouseSlot != lastScannedSlot
+                && !(mouseSlot instanceof SlotCrafting);
     }
 
     @SubscribeEvent
     public void clientTick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
-        EntityPlayer entityPlayer = mc.thePlayer;
-        if (entityPlayer != null) {
-            if (!TCInventoryScanning.isServerSideInstalled) {
-                if (!missingMessageSent) {
-                    entityPlayer.addChatMessage(
-                            new ChatComponentText(
-                                    "This server does not have Thaumcraft Inventory Scanning installed. It will be disabled."));
-                    missingMessageSent = true;
-                }
-                return;
-            }
-
-            ItemStack mouseItem = entityPlayer.inventory.getItemStack();
-            if (mouseItem != null && mouseItem.getItem() == thaumometer) {
-                if (mouseSlot != null && mouseSlot.getStack() != null
-                        && mouseSlot.canTakeStack(entityPlayer)
-                        && mouseSlot != lastScannedSlot
-                        && !(mouseSlot instanceof SlotCrafting)) {
+        EntityPlayer player = mc.thePlayer;
+        World world = mc.theWorld.provider.worldObj;
+        if (player == null) return;
+        ItemStack mouseItem = player.inventory.getItemStack();
+        if (mouseItem != null && mouseItem.getItem() == thaumometer) {
+            if (isScannableSlot(player)) {
+                ScanResult result = new ScanResult(
+                        (byte) 1,
+                        Item.getIdFromItem(mouseSlot.getStack().getItem()),
+                        mouseSlot.getStack().getItemDamage(),
+                        null,
+                        "");
+                Map<Aspect, Integer> selectedItemAspectList = ScanManager.getScanAspects(result, world).aspects;
+                if ((!selectedItemAspectList.isEmpty())) {
                     ticksHovered++;
-                    ItemStack itemStack = mouseSlot.getStack();
-                    if (currentScan == null) {
-                        currentScan = new ScanResult(
-                                (byte) 1,
-                                Item.getIdFromItem(itemStack.getItem()),
-                                itemStack.getItemDamage(),
-                                null,
-                                "");
-                    }
-                    if (ScanManager.isValidScanTarget(entityPlayer, currentScan, "@")) {
-                        if (ticksHovered > SOUND_TICKS && ticksHovered % 2 == 0) {
-                            entityPlayer.worldObj.playSound(
-                                    entityPlayer.posX,
-                                    entityPlayer.posY,
-                                    entityPlayer.posZ,
-                                    "thaumcraft:cameraticks",
-                                    0.2F,
-                                    0.45F + entityPlayer.worldObj.rand.nextFloat() * 0.1F,
-                                    false);
-                        }
+                    if (currentScan == null) currentScan = result;
+                    if (ScanManager.isValidScanTarget(player, currentScan, "@")) {
+                        player.addChatMessage(new ChatComponentText((selectedItemAspectList.toString())));
+                        player.addChatMessage(
+                                new ChatComponentText((selectedItemAspectList.isEmpty() ? "TRUE" : "FALSE")));
+                        player.addChatMessage(new ChatComponentText((Integer.toString(selectedItemAspectList.size()))));
+                        player.addChatMessage(new ChatComponentText("isValidScanTarget1"));
+                        playScanningSoundTick(player);
                         if (ticksHovered >= SCAN_TICKS) {
-                            try {
-                                if (ScanManager.completeScan(entityPlayer, currentScan, "@")) {
-                                    NetworkHandler.instance.sendToServer(new MessageScanSlot(mouseSlot.slotNumber));
-                                }
-                            } catch (StackOverflowError e) {
-                                // Can't do anything about Thaumcraft freaking out except for calming it down if it
-                                // does.
-                                // If Thaumcraft happens to get into a weird recipe loop, we just ignore that and assume
-                                // the item unscannable.
-                            }
+                            tryCompleteScan(player);
                             ticksHovered = 0;
                             lastScannedSlot = mouseSlot;
                             currentScan = null;
@@ -136,40 +119,49 @@ public class ClientProxy extends CommonProxy {
                         currentScan = null;
                         lastScannedSlot = mouseSlot;
                     }
-                } else if (isHoveringPlayer && currentScan != null) {
-                    ticksHovered++;
-                    if (ScanManager.isValidScanTarget(entityPlayer, currentScan, "@")) {
-                        if (ticksHovered > SOUND_TICKS && ticksHovered % 2 == 0) {
-                            entityPlayer.worldObj.playSound(
-                                    entityPlayer.posX,
-                                    entityPlayer.posY,
-                                    entityPlayer.posZ,
-                                    "thaumcraft:cameraticks",
-                                    0.2F,
-                                    0.45F + entityPlayer.worldObj.rand.nextFloat() * 0.1F,
-                                    false);
-                        }
-                        if (ticksHovered >= SCAN_TICKS) {
-                            try {
-                                if (ScanManager.completeScan(entityPlayer, currentScan, "@")) {
-                                    NetworkHandler.instance.sendToServer(new MessageScanSelf());
-                                }
-                            } catch (StackOverflowError e) {
-                                // Can't do anything about Thaumcraft freaking out except for calming it down if it
-                                // does.
-                                // If Thaumcraft happens to get into a weird recipe loop, we just ignore that and assume
-                                // the item unscannable.
-                            }
-                            ticksHovered = 0;
-                            currentScan = null;
-                        }
+                }
+            } else if (isHoveringPlayer && currentScan != null) {
+                player.addChatMessage(new ChatComponentText("ALAAARM!"));
+                ticksHovered++;
+                if (ScanManager.isValidScanTarget(player, currentScan, "@")) {
+                    player.addChatMessage(new ChatComponentText("isValidScanTarget2"));
+                    playScanningSoundTick(player);
+                    if (ticksHovered >= SCAN_TICKS) {
+                        tryCompleteScan(player);
+                        ticksHovered = 0;
+                        currentScan = null;
                     }
                 }
-            } else {
-                ticksHovered = 0;
-                currentScan = null;
-                lastScannedSlot = null;
             }
+        } else {
+            ticksHovered = 0;
+            currentScan = null;
+            lastScannedSlot = null;
+        }
+    }
+
+    private void tryCompleteScan(EntityPlayer player) {
+        try {
+            if (ScanManager.completeScan(player, currentScan, "@"))
+                NetworkHandler.instance.sendToServer(new MessageScanSlot(mouseSlot.slotNumber));
+        } catch (StackOverflowError e) {
+            // Can't do anything about Thaumcraft freaking out except for calming it down if it
+            // does.
+            // If Thaumcraft happens to get into a weird recipe loop, we just ignore that and assume
+            // the item unscannable.
+        }
+    }
+
+    private void playScanningSoundTick(EntityPlayer entityPlayer) {
+        if (ticksHovered > SOUND_TICKS && ticksHovered % 2 == 0) {
+            entityPlayer.worldObj.playSound(
+                    entityPlayer.posX,
+                    entityPlayer.posY,
+                    entityPlayer.posZ,
+                    "thaumcraft:cameraticks",
+                    0.2F,
+                    0.45F + entityPlayer.worldObj.rand.nextFloat() * 0.1F,
+                    false);
         }
     }
 
