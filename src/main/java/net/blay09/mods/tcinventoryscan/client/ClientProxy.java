@@ -18,7 +18,6 @@ import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
-import net.minecraft.world.World;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -87,7 +86,6 @@ public class ClientProxy extends CommonProxy {
     public void clientTick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
-        World world = mc.theWorld.provider.worldObj;
         if (player == null) return;
         ItemStack mouseItem = player.inventory.getItemStack();
         if (mouseItem != null && mouseItem.getItem() == thaumometer) {
@@ -98,7 +96,8 @@ public class ClientProxy extends CommonProxy {
                         mouseSlot.getStack().getItemDamage(),
                         null,
                         "");
-                Map<Aspect, Integer> selectedItemAspectList = ScanManager.getScanAspects(result, world).aspects;
+                Map<Aspect, Integer> selectedItemAspectList = ScanManager
+                        .getScanAspects(result, mc.theWorld.provider.worldObj).aspects;
                 if ((!selectedItemAspectList.isEmpty())) {
                     ticksHovered++;
                     if (currentScan == null) currentScan = result;
