@@ -2,6 +2,7 @@ package net.blay09.mods.tcinventoryscan.client;
 
 import net.blay09.mods.tcinventoryscan.CommonProxy;
 import net.blay09.mods.tcinventoryscan.TCInventoryScanning;
+import net.blay09.mods.tcinventoryscan.net.MessageScanSelf;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSlot;
 import net.blay09.mods.tcinventoryscan.net.NetworkHandler;
 import net.minecraft.client.Minecraft;
@@ -14,7 +15,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -54,7 +55,7 @@ public class ClientProxy extends CommonProxy {
      * Slot the cursor is hovering over
      **/
     private Slot hoveringSlot;
-    private Slot lastScannedSlot;
+    private Slot lastHoveredSlot;
     private int ticksHovered = 0;
     private ClientTickEventsFML effectRenderer;
     private ScanResult currentScan = null;
@@ -91,41 +92,47 @@ public class ClientProxy extends CommonProxy {
             return;
         }
         // Handle scanning item
-        result = new ScanResult(
-                (byte) 1,
-                Item.getIdFromItem(hoveringSlot.getStack().getItem()),
-                hoveringSlot.getStack().getItemDamage(),
-                null,
-                "");
-        if (hoveringSlot.canTakeStack(player) && !(hoveringSlot instanceof SlotCrafting)
-                && ScanManager.isValidScanTarget(player, result, "@")
-                && !ScanManager.getScanAspects(result, Minecraft.getMinecraft().theWorld.provider.worldObj).aspects
-                        .isEmpty()) {
-            currentScan = result;
-            isValidSlot = true;
-            return;
+        if (hoveringSlot != null && hoveringSlot.getStack() != null) {
+            result = new ScanResult(
+                    (byte) 1,
+                    Item.getIdFromItem(hoveringSlot.getStack().getItem()),
+                    hoveringSlot.getStack().getItemDamage(),
+                    null,
+                    "");
+            if (hoveringSlot.canTakeStack(player) && !(hoveringSlot instanceof SlotCrafting)
+                    && ScanManager.isValidScanTarget(player, result, "@")
+                    && !ScanManager.getScanAspects(result, Minecraft.getMinecraft().theWorld.provider.worldObj).aspects
+                            .isEmpty()) {
+                currentScan = result;
+                isValidSlot = true;
+                return;
+            }
         }
         // Invalid scan
+        cancel();
+    }
+
+    private boolean notHoldingThaumometer(EntityPlayer player) {
+        return player == null || player.inventory.getItemStack() == null
+            || player.inventory.getItemStack().getItem() != thaumometer;
+    }
+
+    private void cancel() {
+        ticksHovered = 0;
         currentScan = null;
         isValidSlot = false;
     }
 
     @SubscribeEvent
-    public void clientTick(TickEvent.ClientTickEvent event) {
+    public void clientTick(TickEvent.ClientTickEvent ignored) {
         // Get minecraft and player objects
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
-        ItemStack selectedItem;
-        // Null checks
-        if (player == null || hoveringSlot == null
-                || hoveringSlot.getStack() == null
-                || (selectedItem = player.inventory.getItemStack()) == null || selectedItem.getItem() != thaumometer) {
-            ticksHovered = 0;
-            currentScan = null;
-            isValidSlot = false;
+        if (notHoldingThaumometer(player)) {
+            cancel();
             return;
         }
-        switch ((isValidSlot ? 0 : 1) + ((hoveringSlot.equals(lastScannedSlot) ? 0 : 10))) {
+        switch ((isValidSlot ? 0 : 1) + ((hoveringSlot == lastHoveredSlot ? 0 : 10))) {
             // Valid item + unchanged slots
             case 0:
                 // Scan the item
@@ -141,26 +148,24 @@ public class ClientProxy extends CommonProxy {
             case 10:
             case 11:
                 // Cancel scanning
-                ticksHovered = 0;
-                lastScannedSlot = hoveringSlot;
+                cancel();
                 // Reevaluate item
                 simulateScan(player);
         }
+        lastHoveredSlot = hoveringSlot;
     }
 
     private void tryCompleteScan(EntityPlayer player) {
         try {
-            if (ScanManager.completeScan(player, currentScan, "@"))
-                NetworkHandler.instance.sendToServer(new MessageScanSlot(hoveringSlot.slotNumber));
+            if (ScanManager.completeScan(player, currentScan, "@")) NetworkHandler.instance.sendToServer(
+                    isHoveringOverPlayer ? new MessageScanSelf() : new MessageScanSlot(hoveringSlot.slotNumber));
         } catch (StackOverflowError e) {
             // Can't do anything about Thaumcraft freaking out except for calming it down if it
             // does.
             // If Thaumcraft happens to get into a weird recipe loop, we just ignore that and assume
             // the item unscannable.
         }
-        ticksHovered = 0;
-        isValidSlot = false;
-        currentScan = null;
+        cancel();
     }
 
     private void playScanningSoundTick(EntityPlayer entityPlayer) {
@@ -193,16 +198,18 @@ public class ClientProxy extends CommonProxy {
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post event) {
         if (TCInventoryScanning.isServerSideInstalled && event.gui instanceof GuiContainer) {
             Minecraft mc = Minecraft.getMinecraft();
-            EntityPlayer entityPlayer = mc.thePlayer;
+            EntityPlayer player = mc.thePlayer;
             isHoveringOverPlayer = isHoveringPlayer((GuiContainer) event.gui, event.mouseX, event.mouseY);
             hoveringSlot = ((GuiContainer) event.gui).getSlotAtPosition(event.mouseX, event.mouseY);
-            // TODO: Aspects not shown in UI
+            if (notHoldingThaumometer(player)) return;
+            player.addChatMessage(new ChatComponentText("STATUS isHoveringOverPlayer: " + isHoveringOverPlayer));
             if (currentScan != null) {
                 renderScanningProgress(event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
+            } else {
                 if (!isHoveringOverPlayer) {
                     event.gui.renderToolTip(hoveringSlot.getStack(), event.mouseX, event.mouseY);
-                    effectRenderer.renderAspectsInGui((GuiContainer) event.gui, entityPlayer);
-                } else if (ScanManager.hasBeenScanned(entityPlayer, new ScanResult((byte) 2, 0, 0, entityPlayer, ""))) {
+                    effectRenderer.renderAspectsInGui((GuiContainer) event.gui, player);
+                } else {
                     renderPlayerAspects(event.gui, event.mouseX, event.mouseY);
                 }
             }
