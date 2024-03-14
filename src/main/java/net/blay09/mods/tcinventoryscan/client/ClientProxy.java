@@ -1,7 +1,5 @@
 package net.blay09.mods.tcinventoryscan.client;
 
-import java.util.Map;
-
 import net.blay09.mods.tcinventoryscan.CommonProxy;
 import net.blay09.mods.tcinventoryscan.TCInventoryScanning;
 import net.blay09.mods.tcinventoryscan.net.MessageScanSlot;
@@ -17,7 +15,6 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -81,18 +78,28 @@ public class ClientProxy extends CommonProxy {
         thaumometer = GameRegistry.findItem("Thaumcraft", "ItemThaumometer");
     }
 
-    private boolean canScan(EntityPlayer entityPlayer) {
-        return isHoveringOverPlayer || (hoveringSlot != null && hoveringSlot.getStack() != null
-                && hoveringSlot.canTakeStack(entityPlayer)
-                && !(hoveringSlot instanceof SlotCrafting)
-                && !ScanManager.getScanAspects(
-                        new ScanResult(
-                                (byte) 1,
-                                Item.getIdFromItem(hoveringSlot.getStack().getItem()),
-                                hoveringSlot.getStack().getItemDamage(),
-                                null,
-                                ""),
-                        Minecraft.getMinecraft().theWorld.provider.worldObj).aspects.isEmpty());
+    private void simulateScan(EntityPlayer player) {
+        if (isHoveringOverPlayer) {
+            currentScan = new ScanResult((byte) 2, 0, 0, player, "");
+            isValidSlot = true;
+            return;
+        }
+        ScanResult result = new ScanResult(
+                (byte) 1,
+                Item.getIdFromItem(hoveringSlot.getStack().getItem()),
+                hoveringSlot.getStack().getItemDamage(),
+                null,
+                "");
+        if (hoveringSlot.canTakeStack(player) && !(hoveringSlot instanceof SlotCrafting)
+                && ScanManager.isValidScanTarget(player, currentScan, "@")
+                && !ScanManager.getScanAspects(result, Minecraft.getMinecraft().theWorld.provider.worldObj).aspects
+                        .isEmpty()) {
+            currentScan = result;
+            isValidSlot = true;
+            return;
+        }
+        currentScan = null;
+        isValidSlot = false;
     }
 
     @SubscribeEvent
@@ -102,8 +109,17 @@ public class ClientProxy extends CommonProxy {
         EntityPlayer player = mc.thePlayer;
         ItemStack selectedItem;
         // Null checks
-        if (player == null || hoveringSlot == null || (selectedItem = player.inventory.getItemStack()) == null) return;
-
+        if (player == null || hoveringSlot == null
+                || hoveringSlot.getStack() == null
+                || (selectedItem = player.inventory.getItemStack()) == null)
+            return;
+        // If thaumometer is unselected/dropped
+        if (selectedItem.getItem() != thaumometer) {
+            ticksHovered = 0;
+            currentScan = null;
+            isValidSlot = false;
+            return;
+        }
         switch ((isValidSlot ? 0 : 1) + ((hoveringSlot.equals(lastScannedSlot) ? 0 : 10))) {
             // Valid item + unchanged slots
             case 0:
@@ -121,103 +137,9 @@ public class ClientProxy extends CommonProxy {
             case 11:
                 // Cancel scanning
                 ticksHovered = 0;
-                currentScan = null;
-                isValidSlot = false;
                 lastScannedSlot = hoveringSlot;
                 // Reevaluate item
-                if (canScan(player)) {
-                    isValidSlot = true;
-                    currentScan = new ScanResult(
-                            (byte) 1,
-                            Item.getIdFromItem(hoveringSlot.getStack().getItem()),
-                            hoveringSlot.getStack().getItemDamage(),
-                            null,
-                            "");
-                }
-        }
-
-        // Immediately return if the selected slot can't be scanned and did not change
-        if (hoveringSlot == null || (!isValidSlot && hoveringSlot.equals(lastScannedSlot))) return;
-        if (!hoveringSlot.equals(lastScannedSlot)) isValidSlot = false;
-        Minecraft.getMinecraft().thePlayer
-                .addChatMessage(new ChatComponentText("STATUS hoveringSlot: " + hoveringSlot));
-        lastScannedSlot = hoveringSlot;
-        // Ensure that a thaumometer is selected
-        if (selectedItem == null || selectedItem.getItem() != thaumometer) return;
-        player.addChatMessage(new ChatComponentText("PASSED SELECTED THAUMOMETER CHECK"));
-        // Check if the thaumometer is scanning a new slot
-        if (!isValidSlot) {
-            player.addChatMessage(new ChatComponentText("PASSED INEQUAL SLOTS CHECK"));
-            ticksHovered = 0;
-            // Check if the Slot (or Player) can be scanned and has Aspects
-            isValidSlot = isHoveringOverPlayer
-                    || (canScan(player) && ScanManager.isValidScanTarget(player, currentScan, "@"));
-            currentScan = isValidSlot ? currentScan : null;
-            if (isValidSlot) player.addChatMessage(new ChatComponentText("PASSED ISVALIDSLOT"));
-        }
-        // If the player is scanning a valid item (or himself)
-        if (isValidSlot) {
-            // Increment the ticks hovered and play scanning sound
-            ticksHovered++;
-            player.addChatMessage(new ChatComponentText("TICKED"));
-            playScanningSoundTick(player);
-            if (ticksHovered >= SCAN_TICKS) {
-                // If the slot was scanned for lon enough complete the research
-                tryCompleteScan(player);
-
-            }
-        }
-    }
-
-    public void clientTick2(TickEvent.ClientTickEvent event) {
-        Minecraft mc = Minecraft.getMinecraft();
-        EntityPlayer player = mc.thePlayer;
-        if (player == null) return;
-        ItemStack mouseItem = player.inventory.getItemStack();
-        if (mouseItem != null && mouseItem.getItem() == thaumometer) {
-            if (canScan(player)) {
-                ScanResult result = new ScanResult(
-                        (byte) 1,
-                        Item.getIdFromItem(hoveringSlot.getStack().getItem()),
-                        hoveringSlot.getStack().getItemDamage(),
-                        null,
-                        "");
-                Map<Aspect, Integer> selectedItemAspectList = ScanManager
-                        .getScanAspects(result, mc.theWorld.provider.worldObj).aspects;
-                if ((!selectedItemAspectList.isEmpty())) {
-                    ticksHovered++;
-                    if (currentScan == null) currentScan = result;
-                    if (ScanManager.isValidScanTarget(player, currentScan, "@")) {
-                        player.addChatMessage(
-                                new ChatComponentText((selectedItemAspectList.isEmpty() ? "TRUE" : "FALSE")));
-                        player.addChatMessage(new ChatComponentText("isValidScanTarget1"));
-                        playScanningSoundTick(player);
-                        if (ticksHovered >= SCAN_TICKS) {
-                            tryCompleteScan(player);
-                            ticksHovered = 0;
-                            lastScannedSlot = hoveringSlot;
-                            currentScan = null;
-                        }
-                    } else {
-                        currentScan = null;
-                        lastScannedSlot = hoveringSlot;
-                    }
-                }
-            } else if (isHoveringOverPlayer && currentScan != null) {
-                player.addChatMessage(new ChatComponentText("ALAAARM!"));
-                ticksHovered++;
-                if (ScanManager.isValidScanTarget(player, currentScan, "@")) {
-                    player.addChatMessage(new ChatComponentText("isValidScanTarget2"));
-                    playScanningSoundTick(player);
-                    if (ticksHovered >= SCAN_TICKS) {
-                        tryCompleteScan(player);
-                    }
-                }
-            }
-        } else {
-            ticksHovered = 0;
-            currentScan = null;
-            lastScannedSlot = null;
+                simulateScan(player);
         }
     }
 
