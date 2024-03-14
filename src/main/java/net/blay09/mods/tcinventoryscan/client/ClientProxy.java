@@ -15,7 +15,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
-import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -114,7 +113,7 @@ public class ClientProxy extends CommonProxy {
 
     private boolean notHoldingThaumometer(EntityPlayer player) {
         return player == null || player.inventory.getItemStack() == null
-            || player.inventory.getItemStack().getItem() != thaumometer;
+                || player.inventory.getItemStack().getItem() != thaumometer;
     }
 
     private void cancel() {
@@ -125,6 +124,7 @@ public class ClientProxy extends CommonProxy {
 
     @SubscribeEvent
     public void clientTick(TickEvent.ClientTickEvent ignored) {
+        if (!TCInventoryScanning.isServerSideInstalled) return;
         // Get minecraft and player objects
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.thePlayer;
@@ -155,6 +155,9 @@ public class ClientProxy extends CommonProxy {
         lastHoveredSlot = hoveringSlot;
     }
 
+    /**
+     * Completes a Scan if currentScan was set to a valid target, will complete self and item scans
+     **/
     private void tryCompleteScan(EntityPlayer player) {
         try {
             if (ScanManager.completeScan(player, currentScan, "@")) NetworkHandler.instance.sendToServer(
@@ -168,6 +171,10 @@ public class ClientProxy extends CommonProxy {
         cancel();
     }
 
+    /**
+     * Plays one tick of the scanning sound, needs to be called every tick while scanning while incrementing
+     * ticksHovered
+     **/
     private void playScanningSoundTick(EntityPlayer entityPlayer) {
         if (ticksHovered > SOUND_TICKS && ticksHovered % 2 == 0) {
             entityPlayer.worldObj.playSound(
@@ -199,13 +206,15 @@ public class ClientProxy extends CommonProxy {
         if (TCInventoryScanning.isServerSideInstalled && event.gui instanceof GuiContainer) {
             Minecraft mc = Minecraft.getMinecraft();
             EntityPlayer player = mc.thePlayer;
+            // Calculate the slot the cursor is hovering over
             isHoveringOverPlayer = isHoveringPlayer((GuiContainer) event.gui, event.mouseX, event.mouseY);
             hoveringSlot = ((GuiContainer) event.gui).getSlotAtPosition(event.mouseX, event.mouseY);
             if (notHoldingThaumometer(player)) return;
-            player.addChatMessage(new ChatComponentText("STATUS isHoveringOverPlayer: " + isHoveringOverPlayer));
+            // If there's something being scanned
             if (currentScan != null) {
                 renderScanningProgress(event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
             } else {
+                // Display Tooltips and aspects
                 if (!isHoveringOverPlayer) {
                     event.gui.renderToolTip(hoveringSlot.getStack(), event.mouseX, event.mouseY);
                     effectRenderer.renderAspectsInGui((GuiContainer) event.gui, player);
