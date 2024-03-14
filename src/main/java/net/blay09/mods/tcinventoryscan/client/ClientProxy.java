@@ -119,10 +119,7 @@ public class ClientProxy extends CommonProxy {
         // Null checks
         if (player == null || hoveringSlot == null
                 || hoveringSlot.getStack() == null
-                || (selectedItem = player.inventory.getItemStack()) == null)
-            return;
-        // If thaumometer is unselected/dropped
-        if (selectedItem.getItem() != thaumometer) {
+                || (selectedItem = player.inventory.getItemStack()) == null || selectedItem.getItem() != thaumometer) {
             ticksHovered = 0;
             currentScan = null;
             isValidSlot = false;
@@ -199,6 +196,7 @@ public class ClientProxy extends CommonProxy {
             EntityPlayer entityPlayer = mc.thePlayer;
             isHoveringOverPlayer = isHoveringPlayer((GuiContainer) event.gui, event.mouseX, event.mouseY);
             hoveringSlot = ((GuiContainer) event.gui).getSlotAtPosition(event.mouseX, event.mouseY);
+            // TODO: Aspects not shown in UI
             if (currentScan != null) {
                 renderScanningProgress(event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
                 if (!isHoveringOverPlayer) {
