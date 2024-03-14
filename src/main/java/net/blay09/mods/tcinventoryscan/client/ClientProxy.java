@@ -78,26 +78,34 @@ public class ClientProxy extends CommonProxy {
         thaumometer = GameRegistry.findItem("Thaumcraft", "ItemThaumometer");
     }
 
+    /**
+     * Checks whether the currently hovered item or player would be a valid scan and sets currentScan and isValidScan
+     * accordingly
+     **/
     private void simulateScan(EntityPlayer player) {
-        if (isHoveringOverPlayer) {
-            currentScan = new ScanResult((byte) 2, 0, 0, player, "");
+        // Handle scanning player
+        ScanResult result = new ScanResult((byte) 2, 0, 0, player, "");
+        if (isHoveringOverPlayer && ScanManager.isValidScanTarget(player, result, "@")) {
+            currentScan = result;
             isValidSlot = true;
             return;
         }
-        ScanResult result = new ScanResult(
+        // Handle scanning item
+        result = new ScanResult(
                 (byte) 1,
                 Item.getIdFromItem(hoveringSlot.getStack().getItem()),
                 hoveringSlot.getStack().getItemDamage(),
                 null,
                 "");
         if (hoveringSlot.canTakeStack(player) && !(hoveringSlot instanceof SlotCrafting)
-                && ScanManager.isValidScanTarget(player, currentScan, "@")
+                && ScanManager.isValidScanTarget(player, result, "@")
                 && !ScanManager.getScanAspects(result, Minecraft.getMinecraft().theWorld.provider.worldObj).aspects
                         .isEmpty()) {
             currentScan = result;
             isValidSlot = true;
             return;
         }
+        // Invalid scan
         currentScan = null;
         isValidSlot = false;
     }
@@ -130,9 +138,9 @@ public class ClientProxy extends CommonProxy {
                 break;
             // Invalid item + unchanged slots
             case 1:
-                // No need to do anything
-                return;
-            // Valid/invalid item + changed slots
+                // In case of sudden jump to player sprite, recheck if player is selected
+                if (!isHoveringOverPlayer) return;
+                // Valid/invalid item + changed slots
             case 10:
             case 11:
                 // Cancel scanning
@@ -189,49 +197,15 @@ public class ClientProxy extends CommonProxy {
         if (TCInventoryScanning.isServerSideInstalled && event.gui instanceof GuiContainer) {
             Minecraft mc = Minecraft.getMinecraft();
             EntityPlayer entityPlayer = mc.thePlayer;
-            boolean oldHoveringPlayer = isHoveringOverPlayer;
             isHoveringOverPlayer = isHoveringPlayer((GuiContainer) event.gui, event.mouseX, event.mouseY);
-            if (!isHoveringOverPlayer) {
-                Slot oldMouseSlot = hoveringSlot;
-                hoveringSlot = ((GuiContainer) event.gui).getSlotAtPosition(event.mouseX, event.mouseY);
-                if (oldMouseSlot != hoveringSlot) {
-                    ticksHovered = 0;
-                    currentScan = null;
-                }
-            }
-            if (oldHoveringPlayer != isHoveringOverPlayer) {
-                ticksHovered = 0;
-                if (isHoveringOverPlayer) {
-                    currentScan = new ScanResult((byte) 2, 0, 0, entityPlayer, "");
-                    if (!ScanManager.isValidScanTarget(entityPlayer, currentScan, "@")) {
-                        currentScan = null;
-                    }
-                }
-            }
-
-            ItemStack mouseItem = entityPlayer.inventory.getItemStack();
-            if (mouseItem != null && mouseItem.getItem() == thaumometer) {
-                if (hoveringSlot != null && hoveringSlot.getStack() != null) {
-                    if (currentScan != null) {
-                        renderScanningProgress(
-                                event.gui,
-                                event.mouseX,
-                                event.mouseY,
-                                ticksHovered / (float) SCAN_TICKS);
-                    }
+            hoveringSlot = ((GuiContainer) event.gui).getSlotAtPosition(event.mouseX, event.mouseY);
+            if (currentScan != null) {
+                renderScanningProgress(event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
+                if (!isHoveringOverPlayer) {
                     event.gui.renderToolTip(hoveringSlot.getStack(), event.mouseX, event.mouseY);
                     effectRenderer.renderAspectsInGui((GuiContainer) event.gui, entityPlayer);
-                } else if (isHoveringOverPlayer) {
-                    if (currentScan != null) {
-                        renderScanningProgress(
-                                event.gui,
-                                event.mouseX,
-                                event.mouseY,
-                                ticksHovered / (float) SCAN_TICKS);
-                    }
-                    if (ScanManager.hasBeenScanned(entityPlayer, new ScanResult((byte) 2, 0, 0, entityPlayer, ""))) {
-                        renderPlayerAspects(event.gui, event.mouseX, event.mouseY);
-                    }
+                } else if (ScanManager.hasBeenScanned(entityPlayer, new ScanResult((byte) 2, 0, 0, entityPlayer, ""))) {
+                    renderPlayerAspects(event.gui, event.mouseX, event.mouseY);
                 }
             }
         }
