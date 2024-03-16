@@ -42,7 +42,6 @@ public class ClientProxy extends CommonProxy {
 
     private static final int SCAN_TICKS = 50;
     private static final int SOUND_TICKS = 5;
-
     private static final int INVENTORY_PLAYER_X = 26;
     private static final int INVENTORY_PLAYER_Y = 8;
     private static final int INVENTORY_PLAYER_WIDTH = 52;
@@ -132,25 +131,25 @@ public class ClientProxy extends CommonProxy {
             cancel();
             return;
         }
-        switch ((isValidSlot ? 0 : 1) + ((hoveringSlot == lastHoveredSlot ? 0 : 10))) {
-            // Valid item + unchanged slots
-            case 0:
-                // Scan the item
+        // Check if the cursor moved to a different slot
+        if (hoveringSlot == lastHoveredSlot) {
+            // Slots did not change
+            if (isValidSlot) {
+                // Scan Slot
                 ticksHovered++;
                 playScanningSoundTick(player);
                 if (ticksHovered >= SCAN_TICKS) tryCompleteScan(player);
-                break;
-            // Invalid item + unchanged slots
-            case 1:
-                // In case of sudden jump to player sprite, recheck if player is selected
-                if (!isHoveringOverPlayer) return;
-                // Valid/invalid item + changed slots
-            case 10:
-            case 11:
-                // Cancel scanning
-                cancel();
-                // Reevaluate item
-                simulateScan(player);
+            } else {
+                // Check if there was a sudden jump to player sprite, otherwise do nothing
+                if (isHoveringOverPlayer) {
+                    cancel();
+                    simulateScan(player);
+                }
+            }
+        } else {
+            // Slots have changed, recheck if the new one can be scanned
+            cancel();
+            simulateScan(player);
         }
         lastHoveredSlot = hoveringSlot;
     }
