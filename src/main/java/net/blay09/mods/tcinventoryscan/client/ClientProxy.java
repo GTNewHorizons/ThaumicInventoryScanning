@@ -205,10 +205,11 @@ public class ClientProxy extends CommonProxy {
         if (TCInventoryScanning.isServerSideInstalled && event.gui instanceof GuiContainer) {
             Minecraft mc = Minecraft.getMinecraft();
             EntityPlayer player = mc.thePlayer;
+            if (notHoldingThaumometer(player)) return;
             // Calculate the slot the cursor is hovering over
             isHoveringOverPlayer = isHoveringPlayer((GuiContainer) event.gui, event.mouseX, event.mouseY);
             hoveringSlot = ((GuiContainer) event.gui).getSlotAtPosition(event.mouseX, event.mouseY);
-            if (notHoldingThaumometer(player)) return;
+            if (hoveringSlot == null || hoveringSlot.getStack() == null) return;
             // If there's something being scanned
             if (currentScan != null) {
                 renderScanningProgress(event.gui, event.mouseX, event.mouseY, ticksHovered / (float) SCAN_TICKS);
