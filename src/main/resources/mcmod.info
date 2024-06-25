@@ -12,10 +12,6 @@
 		"credits": "",
 		"logoFile": "",
 		"screenshots": [],
-		"parent": "",
-		"requiredMods": ["Thaumcraft"],
-		"dependencies": ["Thaumcraft"],
-		"dependants": [],
-		"useDependencyInformation": true
+		"parent": ""
 	}]
 }
